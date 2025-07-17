@@ -2,12 +2,18 @@
 	import { onMount } from 'svelte';
 	import '../app.css';
 	import { goto } from '$app/navigation';
-
+	import { session } from '$lib/stores/index.js'
+	
 	let { children } = $props();
+	const { sessionToken } = session
 	onMount(() => {
-		if (!localStorage.getItem('session-token')) {
-			goto('/login')
-		}
+		session.init()
+		if (!$sessionToken) goto('/login')
+	})
+
+	$effect(() => {
+		if ($sessionToken !== '' && window.location.pathname === '/login') goto('/')
+		if ($sessionToken === '') goto('/login')
 	})
 </script>
 

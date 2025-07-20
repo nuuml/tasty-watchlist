@@ -32,6 +32,13 @@
 		if (watchedWatchlist && editWatchlist && watchedWatchlist?.name === editWatchlist?.name) {
 			watchedWatchlist = $watchlists.find((list) => list.name === watchedWatchlist?.name);
 		}
+		if (
+			watchedWatchlist &&
+			editWatchlist &&
+			!$watchlists.find((list) => list.name === editWatchlist!.name)
+		) {
+			watchedWatchlist = undefined;
+		}
 		editWatchlist = undefined;
 		showModal = false;
 	};
@@ -153,7 +160,7 @@
 	<div
 		class="flex flex-col gap-4 border-r border-gray-200 bg-gray-100 p-4 dark:border-gray-950 dark:bg-gray-900"
 	>
-		<h1 class="text-xl"><strong>My lists</strong></h1>
+		<div class="flex w-full text-left"><h1 class="text-xl"><strong>My lists</strong></h1></div>
 		{#each $watchlists.sort((a, b) => a.orderIndex - b.orderIndex) as watchlist}
 			<hr class="border-t border-gray-300 dark:border-gray-700" />
 
@@ -184,8 +191,21 @@
 	</div>
 
 	<main class=" w-full overflow-y-auto p-4">
+		{#if !watchedWatchlist && !graphedSymbol}
+			<div class="flex h-full items-center justify-center text-gray-500">
+				<p class="text-lg">Select a watchlist to view its contents</p>
+			</div>
+		{/if}
 		{#if watchedWatchlist}
 			<Card class="flex max-w-none flex-1">
+				<div class="flex w-full flex-col text-left">
+					<h1 class="text-3xl">
+						<strong>{watchedWatchlist.name ?? 'Watchlist'}</strong>
+					</h1>
+					<h2 class="text-xl">
+						{watchedWatchlist.groupName ? `In group:  ${watchedWatchlist.groupName}` : ''}
+					</h2>
+				</div>
 				<table class="min-w-full table-auto text-left text-sm">
 					<thead class="border-b font-medium">
 						<tr>
@@ -196,7 +216,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each watchedWatchlist.watchlistEntries as entry}
+						{#each watchedWatchlist.watchlistEntries as entry (entry.symbol)}
 							<tr
 								onclick={() => viewGraph(entry)}
 								class="border-t hover:bg-gray-300 dark:hover:bg-gray-800"
@@ -273,7 +293,7 @@
 </div>
 
 {#if showModal}
-	<div class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black/20">
+	<div class="bg-opacity-50 fixed inset-0 z-200 flex items-center justify-center bg-black/20">
 		<WatchlistModal close={closeModal} watchlist={editWatchlist} />
 	</div>
 {/if}

@@ -13,9 +13,12 @@
 		session.init();
 
 		const token = get(session.sessionToken);
-		if (!token && window.location.pathname !== '/login') {
+		if (!token && $page.url.pathname !== '/login') {
 			session.logout();
 			goto('/login');
+		}
+		if (token && $page.url.pathname === '/login') {
+			goto('/');
 		}
 	});
 

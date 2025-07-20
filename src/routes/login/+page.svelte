@@ -29,7 +29,7 @@
 <div class="flex h-screen w-full flex-col items-center justify-center gap-4">
 	<Card>
 		<h1 class="m-4 text-6xl">🍒 Tasty Login</h1>
-		<form on:submit|preventDefault={handleSubmit} class="flex w-md flex-col gap-4">
+		<form onsubmit={handleSubmit} class="flex w-md flex-col gap-4">
 			<TextField bind:value={username} id="usernameField" label="Username" />
 			<TextField bind:value={password} id="passwordField" type="password" label="Password" />
 			<Button type="submit" disabled={loading}>

@@ -155,8 +155,12 @@
 	>
 		<h1 class="text-xl"><strong>My lists</strong></h1>
 		{#each $watchlists.sort((a, b) => a.orderIndex - b.orderIndex) as watchlist}
+			<hr class="border-t border-gray-300 dark:border-gray-700" />
+
 			<div class="flex w-full flex-row items-center justify-between">
-				<p class="mr-2 truncate" title={watchlist.name}><em>{watchlist.name}</em></p>
+				<p class="mr-2 truncate" title={watchlist.name}>
+					<strong>{watchlist.name}</strong>
+				</p>
 				<div class="-mr-3 flex flex-row gap-1 text-xs">
 					<Button title="move up" onclick={() => watchlistStore.moveWatchlistUp(watchlist.name)}>
 						<p class="-mx-2">⬆️</p>
@@ -214,7 +218,9 @@
 				{#if isLoadingHistorical}
 					<p class="text-gray-500">Loading historical data...</p>
 				{:else if historicalData.length > 0}
-					<div class="z-100 mb-4 w-full rounded-xl bg-gray-300"><Chart {historicalData} /></div>
+					<div class="z-100 mb-4 w-full rounded-xl bg-gray-300 dark:bg-gray-400">
+						<Chart {historicalData} />
+					</div>
 					<div class="w-full text-sm">
 						<p class="mb-2">
 							Time range: {new Date(historicalData[0]?.timestamp / 1000).toLocaleString()} - {new Date(

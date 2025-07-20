@@ -1,2 +1,2 @@
 export { session } from './auth';
-export * from './watchlist';
+export { watchlistStore } from './watchlist';

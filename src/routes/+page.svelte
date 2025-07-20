@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { Button, Card, WatchlistModal } from '$lib/components/index';
+	import { Button, Card, Chart, WatchlistModal } from '$lib/components/index';
 	import { connectToDxLink, loadInitialData, get24HourPriceData } from '$lib/services';
 	import { session, watchlistStore } from '$lib/stores/index';
 	import { type QuoteUpdate, type Watchlist, type WatchlistEntry } from '$lib/types';
@@ -77,6 +77,7 @@
 				console.error('Error fetching 24-hour data for', graphedSymbol, error);
 				historicalData = [];
 			} finally {
+				console.log(historicalData);
 				isLoadingHistorical = false;
 			}
 		};
@@ -84,6 +85,9 @@
 		fetchData();
 	});
 
+	const sortedHistoricalData = $derived(
+		[...historicalData].sort((a, b) => a.timestamp - b.timestamp)
+	);
 	onDestroy(unsub);
 
 	$effect(() => {
@@ -177,7 +181,7 @@
 
 	<main class=" w-full overflow-y-auto p-4">
 		{#if watchedWatchlist}
-			<Card class="flex w-full">
+			<Card class="flex max-w-none flex-1">
 				<table class="min-w-full table-auto text-left text-sm">
 					<thead class="border-b font-medium">
 						<tr>
@@ -205,21 +209,20 @@
 		{/if}
 
 		{#if graphedSymbol}
-			<Card class="mt-4 w-full">
+			<Card class="mt-4 w-full max-w-none">
 				<h2 class="mb-4 text-lg font-semibold">24-Hour Price Data for {graphedSymbol}</h2>
 				{#if isLoadingHistorical}
 					<p class="text-gray-500">Loading historical data...</p>
 				{:else if historicalData.length > 0}
-					<div class="text-sm">
-						<p class="mb-2">Data points: {historicalData.length}</p>
+					<div class="z-100 mb-4 w-full rounded-xl bg-gray-300"><Chart {historicalData} /></div>
+					<div class="w-full text-sm">
 						<p class="mb-2">
-							Time range: {new Date(historicalData[0]?.timestamp).toLocaleString()} - {new Date(
+							Time range: {new Date(historicalData[0]?.timestamp / 1000).toLocaleString()} - {new Date(
 								historicalData[historicalData.length - 1]?.timestamp
 							).toLocaleString()}
 						</p>
 
-						<!-- Simple data display - you can replace this with a chart component -->
-						<div class="max-h-64 overflow-y-auto">
+						<div class="max-h-64 w-full overflow-y-auto">
 							<table class="min-w-full table-auto text-xs">
 								<thead class="sticky top-0 bg-gray-50 dark:bg-gray-800">
 									<tr>
@@ -231,9 +234,11 @@
 									</tr>
 								</thead>
 								<tbody>
-									{#each historicalData.slice(-20) as candle}
-										<tr class="border-t">
-											<td class="px-2 py-1">{new Date(candle.timestamp).toLocaleTimeString()}</td>
+									{#each sortedHistoricalData as candle}
+										<tr class="border-t text-center">
+											<td class="px-2 py-1"
+												>{new Date(candle.timestamp / 1000).toLocaleTimeString()}</td
+											>
 											<td class="px-2 py-1">{candle.open.toFixed(2)}</td>
 											<td class="px-2 py-1">{candle.close.toFixed(2)}</td>
 											<td class="px-2 py-1">{candle.high.toFixed(2)}</td>

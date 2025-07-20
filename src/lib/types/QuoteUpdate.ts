@@ -10,3 +10,11 @@ export interface QuoteInitialLoadData {
 	bid?: string;
 	last?: string;
 }
+
+export interface HistoricalData {
+	close: number;
+	high: number;
+	low: number;
+	open: number;
+	timestamp: number;
+}

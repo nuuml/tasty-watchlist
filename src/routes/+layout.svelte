@@ -14,6 +14,7 @@
 
 		const token = get(session.sessionToken);
 		if (!token && window.location.pathname !== '/login') {
+			session.logout();
 			goto('/login');
 		}
 	});

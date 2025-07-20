@@ -177,7 +177,19 @@ export const get24HourPriceData = async (
 						acceptAggregationPeriod: 0.1,
 						acceptDataFormat: 'COMPACT',
 						acceptEventFields: {
-							Candle: ['eventType', 'eventSymbol', 'time', 'open', 'close', 'high', 'low', 'volume']
+							Candle: [
+								'eventType',
+								'eventSymbol',
+								'time',
+								'open',
+								'close',
+								'high',
+								'low',
+								'volume',
+								'bid',
+								'ask',
+								'last'
+							]
 						}
 					})
 				);
@@ -185,7 +197,7 @@ export const get24HourPriceData = async (
 
 			if (msg.type === 'FEED_CONFIG' && msg.channel === 5) {
 				const lastTradingDay = getLastTradingDay();
-				const fromTime = Math.floor(lastTradingDay.getTime() / 1000) - 24 * 60 * 60;
+				const fromTime = Math.floor(lastTradingDay.getTime()) - 24 * 60 * 60;
 				const candleSymbol = `${symbol}{=5m}`;
 
 				candleSocket.send(

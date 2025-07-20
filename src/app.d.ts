@@ -9,5 +9,8 @@ declare global {
 		// interface Platform {}
 	}
 }
+declare module '*.svelte' {
+	export { SvelteComponentTyped as default } from 'svelte';
+}
 
 export {};

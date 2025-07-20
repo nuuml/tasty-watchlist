@@ -153,6 +153,7 @@ export const get24HourPriceData = async (
 
 		candleSocket.onmessage = (event) => {
 			const msg = JSON.parse(event.data);
+			console.log('Candle WebSocket received:', msg); // Debug logging
 
 			if (msg.type === 'AUTH_STATE' && msg.state === 'UNAUTHORIZED') {
 				candleSocket.send(JSON.stringify({ type: 'AUTH', channel: 0, token }));
@@ -162,65 +163,86 @@ export const get24HourPriceData = async (
 				candleSocket.send(
 					JSON.stringify({
 						type: 'CHANNEL_REQUEST',
-						channel: 4,
+						channel: 5,
 						service: 'FEED',
 						parameters: { contract: 'AUTO' }
 					})
 				);
 			}
 
-			if (msg.type === 'CHANNEL_OPENED' && msg.channel === 4) {
+			if (msg.type === 'CHANNEL_OPENED' && msg.channel === 5) {
 				candleSocket.send(
 					JSON.stringify({
 						type: 'FEED_SETUP',
-						channel: 4,
+						channel: 5,
 						acceptAggregationPeriod: 0.1,
 						acceptDataFormat: 'COMPACT',
 						acceptEventFields: {
-							Candle: ['eventType', 'eventSymbol', 'time', 'open', 'close', 'high', 'low']
+							Candle: ['eventType', 'eventSymbol', 'time', 'open', 'close', 'high', 'low', 'volume']
 						}
-					})
-				);
-
-				// Get timestamp for 24 hours ago
-				const fromTime = Math.floor(Date.now() / 1000) - 24 * 60 * 60;
-				const candleSymbol = `${symbol}{=5m,fromTime=${fromTime}}`;
-
-				candleSocket.send(
-					JSON.stringify({
-						type: 'FEED_SUBSCRIPTION',
-						channel: 4,
-						reset: true,
-						add: [{ type: 'Candle', symbol: candleSymbol }]
 					})
 				);
 			}
 
-			if (msg.type === 'FEED_DATA' && msg.channel === 4) {
-				const [eventType, data] = msg.data;
+			if (msg.type === 'FEED_CONFIG' && msg.channel === 5) {
+				const lastTradingDay = getLastTradingDay();
+				const fromTime = Math.floor(lastTradingDay.getTime() / 1000) - 24 * 60 * 60;
+				const candleSymbol = `${symbol}{=5m}`;
+
+				console.log('Subscribing to candle symbol:', candleSymbol);
+
+				candleSocket.send(
+					JSON.stringify({
+						type: 'FEED_SUBSCRIPTION',
+						channel: 5,
+						reset: true,
+						fromTime,
+						add: [{ type: 'Candle', fromTime, symbol: candleSymbol }]
+					})
+				);
+			}
+
+			if (msg.type === 'FEED_DATA' && msg.channel === 5) {
+				console.log('Received candle data:', msg.data);
+				const [eventType, ...dataArrays] = msg.data;
 
 				if (eventType === 'Candle') {
-					for (let i = 1; i < data.length; i += 6) {
-						const [, candleSymbol, timestamp, open, close, high, low] = data.slice(i, i + 6);
-						candleData.push({
-							timestamp: timestamp * 1000, // Convert to milliseconds
-							open,
-							close,
-							high,
-							low
-						});
-					}
-
-					// Check if we're done receiving data (no new data for a bit)
-					setTimeout(() => {
-						if (!isComplete) {
-							isComplete = true;
-							clearTimeout(timeout);
-							cleanup();
-							resolve(candleData.sort((a, b) => a.timestamp - b.timestamp));
+					dataArrays.forEach((dataArray: any) => {
+						if (Array.isArray(dataArray)) {
+							for (let i = 0; i < dataArray.length; i += 7) {
+								const [eventTypeField, candleSymbol, timestamp, open, close, high, low] =
+									dataArray.slice(i, i + 7);
+								if (eventTypeField === 'Candle' && timestamp && open !== undefined) {
+									candleData.push({
+										timestamp: timestamp * 1000,
+										open: parseFloat(open),
+										close: parseFloat(close),
+										high: parseFloat(high),
+										low: parseFloat(low)
+									});
+								}
+							}
 						}
-					}, 2000);
+					});
+
+					if (candleData.length > 0) {
+						setTimeout(() => {
+							if (!isComplete) {
+								isComplete = true;
+								clearTimeout(timeout);
+								cleanup();
+								console.log('Resolving with', candleData.length, 'candles');
+								resolve(candleData.sort((a, b) => a.timestamp - b.timestamp));
+							}
+						}, 3000);
+					}
 				}
+			}
+
+			if (msg.type === 'ERROR') {
+				console.error('DXLink error:', msg);
+				cleanup();
+				reject(new Error(`DXLink error: ${msg.error || 'Unknown error'}`));
 			}
 		};
 
@@ -230,4 +252,23 @@ export const get24HourPriceData = async (
 			reject(error);
 		};
 	});
+};
+
+const getLastTradingDay = (): Date => {
+	const now = new Date();
+	const dayOfWeek = now.getDay();
+
+	if (dayOfWeek === 6) {
+		now.setDate(now.getDate() - 1);
+	} else if (dayOfWeek === 0) {
+		now.setDate(now.getDate() - 2);
+	} else if (dayOfWeek === 1) {
+		const marketOpen = new Date(now);
+		marketOpen.setHours(9, 30, 0, 0);
+		if (now < marketOpen) {
+			now.setDate(now.getDate() - 3);
+		}
+	}
+
+	return now;
 };

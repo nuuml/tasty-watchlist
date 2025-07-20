@@ -7,6 +7,7 @@
 	import { onDestroy } from 'svelte';
 
 	const watchlists = watchlistStore.watchlists;
+	const { sessionExpiration } = session;
 
 	let showModal = $state(false);
 	let editWatchlist: Watchlist | undefined = $state();
@@ -56,6 +57,21 @@
 		if (token) {
 			localToken = token;
 			watchlistStore.init();
+			if ($sessionExpiration) {
+				const now = Date.now();
+				const expirationTime = new Date($sessionExpiration).getTime();
+				const timeUntilExpiration = expirationTime - now;
+
+				if (timeUntilExpiration > 0) {
+					setTimeout(() => {
+						session.logout();
+						goto('/login');
+					}, timeUntilExpiration);
+				} else {
+					session.logout();
+					goto('/login');
+				}
+			}
 		}
 	});
 
@@ -126,6 +142,11 @@
 		};
 
 		loadData();
+	});
+	$effect(() => {
+		if (!session.sessionToken) {
+			goto('/login');
+		}
 	});
 
 	const initQuoteStream = async (symbols: string[]) => {

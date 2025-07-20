@@ -153,7 +153,6 @@ export const get24HourPriceData = async (
 
 		candleSocket.onmessage = (event) => {
 			const msg = JSON.parse(event.data);
-			console.log('Candle WebSocket received:', msg); // Debug logging
 
 			if (msg.type === 'AUTH_STATE' && msg.state === 'UNAUTHORIZED') {
 				candleSocket.send(JSON.stringify({ type: 'AUTH', channel: 0, token }));
@@ -189,8 +188,6 @@ export const get24HourPriceData = async (
 				const fromTime = Math.floor(lastTradingDay.getTime() / 1000) - 24 * 60 * 60;
 				const candleSymbol = `${symbol}{=5m}`;
 
-				console.log('Subscribing to candle symbol:', candleSymbol);
-
 				candleSocket.send(
 					JSON.stringify({
 						type: 'FEED_SUBSCRIPTION',
@@ -203,7 +200,6 @@ export const get24HourPriceData = async (
 			}
 
 			if (msg.type === 'FEED_DATA' && msg.channel === 5) {
-				console.log('Received candle data:', msg.data);
 				const [eventType, ...dataArrays] = msg.data;
 
 				if (eventType === 'Candle') {
@@ -231,7 +227,6 @@ export const get24HourPriceData = async (
 								isComplete = true;
 								clearTimeout(timeout);
 								cleanup();
-								console.log('Resolving with', candleData.length, 'candles');
 								resolve(candleData.sort((a, b) => a.timestamp - b.timestamp));
 							}
 						}, 3000);
@@ -240,7 +235,6 @@ export const get24HourPriceData = async (
 			}
 
 			if (msg.type === 'ERROR') {
-				console.error('DXLink error:', msg);
 				cleanup();
 				reject(new Error(`DXLink error: ${msg.error || 'Unknown error'}`));
 			}

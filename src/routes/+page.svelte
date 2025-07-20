@@ -64,7 +64,6 @@
 		graphedSymbol = symbol.symbol;
 	};
 
-	// Effect to fetch 24-hour data when graphedSymbol changes
 	$effect(() => {
 		if (!graphedSymbol || !localToken) return;
 
@@ -74,7 +73,6 @@
 				const { token, ['dxlink-url']: url } = await session.fetchQuoteToken();
 				const data = await get24HourPriceData(token, url, graphedSymbol);
 				historicalData = data;
-				console.log('24-hour data for', graphedSymbol, data);
 			} catch (error) {
 				console.error('Error fetching 24-hour data for', graphedSymbol, error);
 				historicalData = [];
@@ -100,7 +98,6 @@
 				symbols.map(async (symbol) => {
 					try {
 						const data = await loadInitialData(localToken, symbol);
-						console.log('Initial data for', symbol, data);
 						updates[data.symbol] = {
 							bidPrice: safeParse(data.bid),
 							askPrice: safeParse(data.ask),

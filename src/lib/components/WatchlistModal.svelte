@@ -44,7 +44,6 @@
 	const fetchSymbols = async () => {
 		try {
 			const res = await fetch(`https://api.tastyworks.com/symbols/search/${symbolSearch}`);
-			console.log(res.ok);
 			if (res.ok) {
 				const data = await res.json();
 				searchResults = data.data.items.map((item: any) => mapSymbolDataFromApi(item));
@@ -77,7 +76,6 @@
 	};
 
 	const removeSymbol = (index: number) => {
-		console.log('removing ', index, ' entry ', symbols[index]);
 		symbols.splice(index, 1);
 	};
 	const handleSubmit = async () => {

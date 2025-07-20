@@ -1,29 +1,34 @@
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 
-function createSessionStore() {
+const createSessionStore = () => {
 	const sessionToken = writable('');
 	const sessionExpiration = writable('');
 	const rememberToken = writable('');
 
 	let initialized = false;
 
-	function init() {
+	const init = () => {
 		if (typeof window === 'undefined' || initialized) return;
-		sessionToken.set(localStorage.getItem('session-token') || '');
-		sessionExpiration.set(localStorage.getItem('session-expiration') || '');
-		rememberToken.set(localStorage.getItem('remember-token') || '');
-		sessionToken.subscribe(val => localStorage.setItem('session-token', val));
-		sessionExpiration.subscribe(val => localStorage.setItem('session-expiration', val));
-		rememberToken.subscribe(val => localStorage.setItem('remember-token', val));
-		initialized = true;
-	}
 
-	const login = async (username: string, password: string) => {
+		const expiration = localStorage.getItem('session-expiration') || '';
+
+		if (expiration && new Date(expiration) < new Date()) {
+			logout();
+			return;
+		}
+
+		sessionToken.set(localStorage.getItem('session-token') || '');
+		sessionExpiration.set(expiration);
+		rememberToken.set(localStorage.getItem('remember-token') || '');
+		initialized = true;
+	};
+
+	const login = async (loginUsername: string, password: string) => {
 		const res = await fetch('https://api.cert.tastyworks.com/sessions', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				login: username,
+				login: loginUsername,
 				password,
 				'remember-me': true
 			})
@@ -36,11 +41,25 @@ function createSessionStore() {
 
 		const data = await res.json();
 		sessionToken.set(data.data['session-token']);
+		localStorage.setItem('session-token', data.data['session-token']);
+
 		sessionExpiration.set(data.data['session-expiration']);
+		localStorage.setItem('session-expiration', data.data['session-expiration']);
+
 		rememberToken.set(data.data['remember-token']);
+		localStorage.setItem('remember-token', data.data['remember-token']);
 	};
 
 	const logout = async () => {
+		sessionToken.set('');
+		localStorage.setItem('session-token', '');
+
+		sessionExpiration.set('');
+		localStorage.setItem('session-expiration', '');
+
+		rememberToken.set('');
+		localStorage.setItem('remember-token', '');
+
 		const token = localStorage.getItem('session-token');
 		if (token) {
 			await fetch('https://api.cert.tastyworks.com/sessions', {
@@ -49,23 +68,31 @@ function createSessionStore() {
 					Authorization: token,
 					'Content-Type': 'application/json'
 				}
-			}).catch(() => {
-			});
+			}).catch(() => {});
 		}
-		sessionToken.set('');
-		sessionExpiration.set('');
-		rememberToken.set('');
+	};
+
+	const fetchQuoteToken = async () => {
+		const token = get(sessionToken);
+		const res = await fetch('https://api.cert.tastyworks.com/api-quote-tokens', {
+			headers: {
+				Authorization: token
+			}
+		});
+		if (!res.ok) throw new Error('Failed to get quote token');
+		const json = await res.json();
+		return json.data;
 	};
 
 	return {
 		sessionToken,
 		sessionExpiration,
 		rememberToken,
+		fetchQuoteToken,
 		login,
 		logout,
-        init
+		init
 	};
-    
-}
+};
 
 export const session = createSessionStore();

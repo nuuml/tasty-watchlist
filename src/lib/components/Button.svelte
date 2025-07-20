@@ -1,26 +1,41 @@
 <script lang="ts">
-	import { createEventDispatcher } from "svelte";
+	import type { Snippet } from 'svelte';
+	let {
+		type = 'button',
+		disabled = false,
+		variant = 'primary',
+		children,
+		id,
+		title,
+		onclick
+	}: {
+		type?: 'button' | 'submit' | 'reset';
+		disabled?: boolean;
+		variant?: 'primary' | 'secondary' | 'danger';
+		title?: string;
+		id?: string;
+		children: Snippet;
+		onclick?: (e: MouseEvent) => void;
+	} = $props();
 
-	export let type: 'button' | 'submit' | 'reset' = 'button';
-	export let disabled: boolean = false;
-	export let variant: 'primary' | 'secondary' = 'primary';
 	const variants = {
-		primary: 'bg-indigo-900 text-white hover:bg-indigo-700',
+		primary: 'bg-blue-600 text-white hover:bg-indigo-700',
+		danger: 'bg-red-600 text-white hover:bg-red-700',
 		secondary: 'bg-white text-[#0e23bc] hover:bg-gray-100',
 		disabled: 'bg-gray-300 text-gray-500 cursor-not-allowed'
 	};
-
-    const dispatch = createEventDispatcher()
 </script>
 
 <button
+	{title}
+	{id}
 	{type}
 	class:active:scale-95={!disabled}
 	{disabled}
-	on:click={(e) => dispatch('click', e)}
+	{onclick}
 	class="{variants[
 		disabled ? 'disabled' : variant
-	]}  elevation-5 rounded-md px-4 py-1 my-1 shadow-md transition-colors"
+	]}  elevation-5 my-1 rounded-md px-4 py-1 shadow-md transition-colors"
 >
-	<slot />
+	{@render children?.()}
 </button>

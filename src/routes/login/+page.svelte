@@ -1,26 +1,37 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { Button, Card, TextField } from '$lib/components/index';
-    import { session } from '$lib/stores/index'
+	import { session } from '$lib/stores/index';
+	import { onMount } from 'svelte';
 
 	let username = '';
 	let password = '';
 	let errorMsg = '';
 	let loading = false;
-
-	const handleSubmit = () => {
-        session.login(username, password)
-    }
+	const { sessionToken } = session;
+	onMount(() => {
+		if ($sessionToken) {
+			goto('/');
+		}
+	});
+	const handleSubmit = async () => {
+		try {
+			await session.login(username, password);
+			if ($sessionToken) {
+				goto('/');
+			}
+		} catch (err) {
+			errorMsg = (err as Error).message || 'Login failed';
+		}
+	};
 </script>
 
-<div class="w-full h-screen flex items-center justify-center">
-	<Card class="p-6 w-full max-w-md">
-		<h1 class="text-6xl m-4">🍒 Tasty Login</h1>
-		<form on:submit|preventDefault={handleSubmit} class="flex flex-col gap-4">
+<div class="flex h-screen w-full flex-col items-center justify-center gap-4">
+	<Card>
+		<h1 class="m-4 text-6xl">🍒 Tasty Login</h1>
+		<form on:submit|preventDefault={handleSubmit} class="flex w-md flex-col gap-4">
 			<TextField bind:value={username} id="usernameField" label="Username" />
 			<TextField bind:value={password} id="passwordField" type="password" label="Password" />
-			{#if errorMsg}
-				<p class="text-red-500 text-sm">{errorMsg}</p>
-			{/if}
 			<Button type="submit" disabled={loading}>
 				{#if loading}
 					Logging in...
@@ -30,4 +41,9 @@
 			</Button>
 		</form>
 	</Card>
+	{#if errorMsg}
+		<Card>
+			<p class="max-w-sm text-xs text-red-500">{errorMsg}</p>
+		</Card>
+	{/if}
 </div>

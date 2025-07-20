@@ -1,22 +1,28 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import '../app.css';
 	import { goto } from '$app/navigation';
-	import { session } from '$lib/stores/index.js'
-	
-	let { children } = $props();
-	const { sessionToken } = session
-	onMount(() => {
-		session.init()
-		if (!$sessionToken) goto('/login')
-	})
+	import { session } from '$lib/stores/index.js';
+	import { page } from '$app/stores';
+	import '../app.css';
 
-	$effect(() => {
-		if ($sessionToken !== '' && window.location.pathname === '/login') goto('/')
-		if ($sessionToken === '') goto('/login')
-	})
+	import { get } from 'svelte/store';
+
+	let { children } = $props();
+
+	onMount(() => {
+		session.init();
+
+		const token = get(session.sessionToken);
+		if (!token && window.location.pathname !== '/login') {
+			goto('/login');
+		}
+	});
+
+	$effect: if (get(session.sessionToken) && $page.url.pathname === '/login') {
+		goto('/');
+	}
 </script>
 
-<div class="w-full h-screen dark:bg-gray-800 dark:text-gray-100 bg-gray-200">
+<div class="h-screen w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-100">
 	{@render children()}
 </div>
